@@ -1,15 +1,16 @@
 import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
+from spotipy.oauth2 import SpotifyOAuth
 
-birdy_uri = 'spotify:artist:2WX2uTcsvV5OnS0inACecP'
-spotify = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials())
+scope = 'user-top-read'
+ranges = ['short_term', 'medium_term', 'long_term']
 
-results = spotify.artist_albums(birdy_uri, album_type='album')
-albums = results['items']
-while results['next']:
-    results = spotify.next(results)
-    albums.extend(results['items'])
+sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope))
 
-for album in albums:
-    print(album['name'])
-    
+for sp_range in ['short_term', 'medium_term', 'long_term']:
+    print("range:", sp_range)
+
+    results = sp.current_user_top_artists(time_range=sp_range, limit=1)
+
+    for i, item in enumerate(results['items']):
+        print(i, item['name'])
+    print()
