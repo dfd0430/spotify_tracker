@@ -21,7 +21,8 @@ username = "dfd0430"
 #   print(playlist['name'])
 skiplist = []
 preliminary_skiplist=[]
-
+addlist = []
+put_on= []
 def get_recently_played_names():
     recentlyplayed = sp.current_user_recently_played(limit=5)
     recentlyplayed_names = [songs["track"]["name"] for songs in recentlyplayed["items"]]
@@ -86,8 +87,12 @@ def check_skip(
             if last_song_name not in current_recently_played_names and last_song_name!="":
                 add_preliminary_skip(last_song_name)
 
+def check_in_queue(old_queue_names, current_queue_names):
 
-
+    if check_same_queue(old_queue_names, current_queue_names):
+        for i in range(len(current_queue_names)):
+            if current_queue_names[i] not in old_queue_names and current_queue_names[i] not in addlist and i<10:
+                addlist.append(current_queue_names[i])
 def check(current_recently_played_names,most_recent_song):
 
   for songs in preliminary_skiplist:
@@ -100,6 +105,9 @@ def check(current_recently_played_names,most_recent_song):
   return current_recently_played_names[0]
 
 
+def check_put_on(old_queue_names, current_queue_names,current_song_name):
+    if not check_same_queue(old_queue_names, current_queue_names) and current_song_name not in old_queue_names and current_song_name not in put_on:
+        put_on.append(current_song_name)
 
 
 old_queue_names=[]
@@ -121,20 +129,30 @@ while True:
         current_recently_played_names,
 
     )
-    print("current[0]:")
-    print(current_recently_played_names[0])
+    # print("current[0]:")
+    # print(current_recently_played_names[0])
     print("skiplist:")
     print(skiplist)
-    print("preliminary skiplist:")
-    print(preliminary_skiplist)
-    print("current song "+current_song_name)
+    # print("preliminary skiplist:")
+    # print(preliminary_skiplist)
+    # print("current song "+current_song_name)
+    print("current")
+    print(current_queue_names)
+    print("old")
+    print(old_queue_names)
+    print("addlist:")
+    print(addlist)
+    print("put on:")
+    print(put_on)
+
     print(count)
     count+=1
-
-
+    check_put_on(old_queue_names, current_queue_names, current_song_name)
+    check_in_queue(old_queue_names, current_queue_names)
     old_queue_names=current_queue_names
     last_song_name=current_song_name
     old_recently_played_names=current_recently_played_names
+
     x=check(current_recently_played_names,most_recent_song)
     most_recent_song=x
     sleep(5)
