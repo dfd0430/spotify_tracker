@@ -12,7 +12,76 @@ scope = "user-top-read,user-read-playback-state,user-modify-playback-state,playl
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope))
 username = "dfd0430"
 
+#sqlite initialization
+conn=sqlite3.connect(':memory:')
+c = conn.cursor()
+c.execute("""CREATE TABLE if not exists tracks (
+            id TEXT PRIMARY KEY,
+            times_skipped INTEGER,
+            times_added INTEGER,
+            times_puton INTEGER
+        )""")
+conn.commit()
 
+
+def lists_to_database(skiplist,addlist,put_on):
+    for song in skiplist:
+
+        song_to_database_skip(song)
+
+    for song in addlist:
+        song_to_database_add(song)
+    for song in put_on:
+        song_to_database_put(song)
+
+def check_id_exists(id):
+
+    c.execute(f"SELECT EXISTS(SELECT 1 FROM tracks WHERE id = ?)", (id,))
+    exists = c.fetchone()[0]
+    return exists
+
+def song_to_database_skip(id):
+    if(check_id_exists(id)):
+        c.execute(f"SELECT times_skipped FROM tracks WHERE id = ?", (id,))
+        row = c.fetchone()
+        print("this is the one:")
+        print(row)
+        i= row[0] + 1
+
+        c.execute("""UPDATE tracks SET times_skipped = :times_skipped
+                            WHERE id = :id""",
+                      {'id':id,'times_skipped':i})
+    else:
+
+        c.execute("""   INSERT INTO tracks VALUES (:id,:times_skipped,:times_added,:times_puton)""",{"id":id,"times_skipped":1,"times_added":0,"times_puton":0})
+
+def song_to_database_add(id):
+    if (check_id_exists(id)):
+        c.execute(f"SELECT times_added FROM tracks WHERE id = ?", (id,))
+        row = c.fetchone()
+        i = row[0] + 1
+        with conn:
+            c.execute("""UPDATE tracks SET times_added = :times_added
+                                WHERE id = :id""",
+                      {'id': id, 'times_added': i})
+    else:
+        with conn:
+            c.execute("""   INSERT INTO tracks VALUES (:id,:times_skipped,:times_added,:times_puton)""",
+                      {"id": id, "times_skipped": 0, "times_added": 1, "times_puton": 0})
+
+def song_to_database_put(id):
+    if (check_id_exists(id)):
+        c.execute(f"SELECT times_puton FROM tracks WHERE id = ?", (id,))
+        row = c.fetchone()
+        i = row[0] + 1
+        with conn:
+            c.execute("""UPDATE tracks SET times_puton = :times_puton
+                                WHERE id = :id""",
+                      {'id': id, 'times_puton': i})
+    else:
+        with conn:
+            c.execute("""   INSERT INTO tracks VALUES (:song,:times_skipped,:times_added,:times_puton)""",
+                      {"song": id, "times_skipped": 0, "times_added": 0, "times_puton": 1})
 
 def get_recently_played_names():
     recentlyplayed = sp.current_user_recently_played(limit=5)
@@ -150,44 +219,59 @@ old_recently_played_names = []
 count = 0
 song_changed = False
 
+
+
 while True:
-    #get info current state
-    current_queue_names = get_queue_names()
-    current_song_name = sp.current_playback()["item"]["name"]
-    current_recently_played_names = get_recently_played_names()
-
-    if last_song_name != current_song_name:
-        song_changed = True
+    if(sp.current_playback()== None):
+        sleep(5)
     else:
-        song_changed = False
+        #get info current state
+        current_queue_names = get_queue_names()
+        current_song_name = sp.current_playback()["item"]["name"]
+        current_recently_played_names = get_recently_played_names()
 
-    #check for skips and such
-    check_skip(
-        sp.current_playback()["progress_ms"],
-        current_song_name,
-        sp.current_playback()["item"]["duration_ms"],
-        song_changed,
-    )
-    # if song_before == "":
-    #     song_before = current_song_name
-    # elif song_changed:
-    #     song_before =last_song_name
+        if last_song_name != current_song_name:
+            song_changed = True
+        else:
+            song_changed = False
 
-    check_put_on(old_queue_names, current_queue_names, current_song_name)
-    check_in_queue(old_queue_names, current_queue_names)
+        #check for skips and such
+        check_skip(
+            sp.current_playback()["progress_ms"],
+            current_song_name,
+            sp.current_playback()["item"]["duration_ms"],
+            song_changed,
+        )
+        # if song_before == "":
+        #     song_before = current_song_name
+        # elif song_changed:
+        #     song_before =last_song_name
 
-    old_queue_names = current_queue_names
-    last_song_name = current_song_name
-    old_recently_played_names = current_recently_played_names
+        check_put_on(old_queue_names, current_queue_names, current_song_name)
+        check_in_queue(old_queue_names, current_queue_names)
 
-    print("skiplist")
-    print(skiplist)
-    print("addlist:")
-    print(addlist)
-    print("put on:")
-    print(put_on)
-    print("-----------------------------------------------")
+        old_queue_names = current_queue_names
+        last_song_name = current_song_name
+        old_recently_played_names = current_recently_played_names
 
+        print("skiplist")
+        print(skiplist)
+        print("addlist:")
+        print(addlist)
+        print("put on:")
+        print(put_on)
+        print("-----------------------------------------------")
 
+        lists_to_database(skiplist, addlist, put_on)
+        skiplist = []
+        addlist = []
+        put_on = []
 
-    sleep(5)
+        row = c.fetchall()
+        print(row)
+        with conn:
+            c.execute(f"SELECT * FROM tracks")
+            rows = c.fetchall()
+        for row in rows:
+                print(row)  # Each row is a tuple containing column values
+        sleep(5)
