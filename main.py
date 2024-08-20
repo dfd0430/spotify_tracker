@@ -1,12 +1,16 @@
 from time import sleep
-
+from dotenv import load_dotenv
 import sqlite3
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from pprint import pprint
-import sys
-import argparse
-import logging
+
+# import sys
+# import argparse
+# import logging
+
+# load enviromental variables
+load_dotenv()
 
 # spotify authentication
 scope = "user-top-read,user-read-playback-state,user-modify-playback-state,playlist-modify-private,playlist-modify-public,user-read-recently-played,user-library-read,user-library-modify"
@@ -180,7 +184,6 @@ def check_album():
         if album_name != None:
             return False
         if (
-
             album_name["album"]["name"]
             != sp.current_playback()["item"]["album"]["name"]
         ):
@@ -246,7 +249,6 @@ def clear_playlist(playlist_id):
         )
 
 
-
 skiplist = []
 preliminary_skiplist = []
 addlist = []
@@ -259,65 +261,65 @@ old_recently_played_names = []
 count = 0
 song_changed = False
 
-with conn:
-    c.execute(f"SELECT * FROM tracks")
-    rows = c.fetchall()
-for row in rows:
-    print(row)  # Each row is a tuple containing column values
-    pprint(sp.tracks([row[0]])["tracks"][0]["name"])
-# while True:
-#     if sp.current_playback() == None:
-#         sleep(5)
-#     else:
-#         # get info current state
-#         current_queue_ids = get_queue_ids()
-#         current_song_id = sp.current_playback()["item"]["id"]
-#         current_recently_playes_id = get_recently_played_ids()
+# with conn:
+#     c.execute(f"SELECT * FROM tracks")
+#     rows = c.fetchall()
+# for row in rows:
+#     print(row)  # Each row is a tuple containing column values
+#     pprint(sp.tracks([row[0]])["tracks"][0]["name"])
+while True:
+    if sp.current_playback() == None:
+        sleep(5)
+    else:
+        # get info current state
+        current_queue_ids = get_queue_ids()
+        current_song_id = sp.current_playback()["item"]["id"]
+        current_recently_playes_id = get_recently_played_ids()
+
+        if last_song_name != current_song_id:
+            song_changed = True
+        else:
+            song_changed = False
+
+        # check for skips and such
+        check_skip(
+            sp.current_playback()["progress_ms"],
+            current_song_id,
+            sp.current_playback()["item"]["duration_ms"],
+            song_changed,
+        )
+        # if song_before == "":
+        #     song_before = current_song_id
+        # elif song_changed:
+        #     song_before =last_song_name
+
+        check_put_on(old_queue_ids, current_queue_ids, current_song_id)
+        check_in_queue(old_queue_ids, current_queue_ids)
+
+        old_queue_ids = current_queue_ids
+        last_song_name = current_song_id
+        old_recently_played_names = current_recently_playes_id
+
+        # print("skiplist")
+        # print(skiplist)
+        # print("addlist:")
+        # print(addlist)
+        # print("put on:")
+        # print(put_on)
+        # print("-----------------------------------------------")
+
+        if len(skiplist) + len(addlist) + len(put_on) > 10:
+            lists_to_database(skiplist, addlist, put_on)
+            skiplist = []
+            addlist = []
+            put_on = []
+
+        # with conn:
+        #     c.execute(f"SELECT * FROM tracks")
+        #     rows = c.fetchall()
+        # for row in rows:
+        #     print(row)  # Each row is a tuple containing column values
+        #     # pprint(sp.tracks([row[0]])["tracks"][0]["name"])
+
+        sleep(5)
 #
-#         if last_song_name != current_song_id:
-#             song_changed = True
-#         else:
-#             song_changed = False
-#
-#         # check for skips and such
-#         check_skip(
-#             sp.current_playback()["progress_ms"],
-#             current_song_id,
-#             sp.current_playback()["item"]["duration_ms"],
-#             song_changed,
-#         )
-#         # if song_before == "":
-#         #     song_before = current_song_id
-#         # elif song_changed:
-#         #     song_before =last_song_name
-#
-#         check_put_on(old_queue_ids, current_queue_ids, current_song_id)
-#         check_in_queue(old_queue_ids, current_queue_ids)
-#
-#         old_queue_ids = current_queue_ids
-#         last_song_name = current_song_id
-#         old_recently_played_names = current_recently_playes_id
-#
-#         print("skiplist")
-#         print(skiplist)
-#         print("addlist:")
-#         print(addlist)
-#         print("put on:")
-#         print(put_on)
-#         print("-----------------------------------------------")
-#
-#         if(len(skiplist)+len(addlist)+len(put_on)>10):
-#             lists_to_database(skiplist, addlist, put_on)
-#             skiplist = []
-#             addlist = []
-#             put_on = []
-#
-#
-#         with conn:
-#             c.execute(f"SELECT * FROM tracks")
-#             rows = c.fetchall()
-#         for row in rows:
-#             print(row)  # Each row is a tuple containing column values
-#             # pprint(sp.tracks([row[0]])["tracks"][0]["name"])
-#
-#         sleep(5)
