@@ -1,0 +1,1 @@
+SELECT times_added FROM tracks WHERE song_id = ?

@@ -1,0 +1,1 @@
+SELECT times_skipped FROM tracks WHERE song_id = ?
