@@ -28,7 +28,7 @@ class SpotifyListener:
 
         load_dotenv()
 
-        scope = "user-top-read,user-read-playback-state,user-modify-playback-state,playlist-modify-private,playlist-modify-public,user-read-recently-played,user-library-read,user-library-modify"
+        scope = "user-read-playback-state"
         sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope))
         username = "dfd0430"
         self.sp = sp
@@ -246,20 +246,7 @@ class SpotifyListener:
             self.add_list = []
             self.put_on = []
 
-    # def test(self):
-    #     with open("queries/test.sql") as query:
-    #         self.cursor.execute(query.read())
-    #         rows= self.cursor.fetchall()
-    #     for row in rows:
-    #         print(row)
-    #
-    # def test2(self):
-    #     print(self.skip_list)
-    #     # print(self.current_playback["item"]["name"])
-    #     # print(self.preliminary_skip_list)
-    #     # print(self.song_changed)
-    #     # print(self.current_queue_ids)
-    #     # print(self.old_queue_ids)
+
 
     def update_song_changed(self):
         self.song_changed = self.last_song_id != self.current_playback["item"]["id"]
